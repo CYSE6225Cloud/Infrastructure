@@ -22,6 +22,7 @@ Metadata:
           default: "SSH CIDR"
         Parameters: 
           - SSHLocation
+          
             
 Parameters:
   VpcCIDR:
@@ -48,6 +49,22 @@ Parameters:
     MaxLength: '18'
     MinLength: '9'
     Type: String
+  
+  MyKeyPair:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type : String
+    
+  # KeyName:
+  #   Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+  #   Type: AWS::EC2::KeyPair::CSYE6225
+  #   ConstraintDescription: must be the name of an existing EC2 KeyPair.
+
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues: [t2.micro]
+    ConstraintDescription: must be a valid EC2 instance type.
 
 Resources:
   VPC:
@@ -139,7 +156,45 @@ Resources:
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet3    
-      
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access via port 22 and http access
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: !Ref 'SSHLocation'
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: '0.0.0.0/0'
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: '0.0.0.0/0'
+
+  NewKeyPair:
+    Type: 'AWS::EC2::KeyPair'
+    Properties:
+      KeyName: MyKeyPair
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SecurityGroupIds: 
+        - !Ref InstanceSecurityGroup
+      KeyName: !Ref NewKeyPair
+      ImageId: ami-072f835eeaa05fa01
+      UserData:
+        Fn::Base64: !Sub
+        - |
+
+        - {
+          }    
+
 Outputs:
   VPC:
     Description: VPC ID
@@ -166,4 +221,5 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-PublicSubnet3
     Value: !Ref PublicSubnet3
-
+ 
+ 
